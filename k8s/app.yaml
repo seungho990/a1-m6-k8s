@@ -1,0 +1,77 @@
+# A1-M6 앱 (트랙 A: Git 없이 Docker Hub 이미지로 배포)
+# 아래 3개 자리표시자를 sed로 바꿔서 적용합니다 (파일은 수정하지 않음):
+#   MYNS      → 내 네임스페이스 (예: dev01)
+#   DOCKER_ID → 내 Docker Hub 아이디
+#   LB_IP     → 강사가 알려준 공용 Ingress IP
+# sed -e "s/MYNS/$MY/g" -e "s/DOCKER_ID/$DID/g" -e "s/LB_IP/$LB/g" k8s/app.yaml | kubectl apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: a1-m6
+  labels: { app: a1-m6 }
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: a1-m6 }
+  template:
+    metadata:
+      labels: { app: a1-m6 }
+    spec:
+      containers:
+        - name: web
+          image: docker.io/DOCKER_ID/a1-m6:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: production
+            - name: RELEASE_REVISION
+              value: "v1"                    # 응답의 release_revision 으로 보임
+            - name: DATABASE_URL
+              valueFrom: { secretKeyRef: { name: a1-m6-app-secrets, key: DATABASE_URL } }
+            - name: BASIC_USER
+              valueFrom: { secretKeyRef: { name: a1-m6-app-secrets, key: BASIC_USER } }
+            - name: BASIC_PASSWORD
+              valueFrom: { secretKeyRef: { name: a1-m6-app-secrets, key: BASIC_PASSWORD } }
+          readinessProbe:                    # CSV 검증 + DB 연결까지 되어야 트래픽 받음
+            httpGet: { path: /ready, port: 8000 }
+            periodSeconds: 10
+          livenessProbe:                     # 프로세스가 살아 있는지만 확인
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:                         # 쿼터(요청 500m/1Gi · 상한 1/2Gi) 안에 들어가게 축소
+            requests: { cpu: 100m, memory: 256Mi }
+            limits:   { cpu: 300m, memory: 512Mi }
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: { drop: [ALL] }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: a1-m6
+spec:
+  selector: { app: a1-m6 }
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: a1-m6
+spec:
+  ingressClassName: traefik                # 강사가 설치한 공용 Traefik (LB 1개를 모두가 공유)
+  rules:
+    - host: a1-MYNS.LB_IP.sslip.io         # 예: a1-dev01.211.x.x.x.sslip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: a1-m6
+                port: { number: 80 }

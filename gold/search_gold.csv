@@ -1,0 +1,8 @@
+qid,query,relevant_rule_ids,review_note
+Q01,이미지 alt 속성 누락,IMG-001,대체 텍스트 속성 존재 검사
+Q02,더보기 사내 링크 금지,COMP-LINK-001,사내 더보기 정책만 정답
+Q03,링크 목적 주변 맥락,LINK-002,WCAG 링크 목적 검토로 연결
+Q04,화면에 보이는 label,COMP-FORM-001,회사 표시 레이블 정책
+Q05,입력 필드 이름 후보,FORM-001,표준 관련 입력 이름 후보
+Q06,자세히 단독 문구 제한,COMP-LINK-002,회사 자세히 제한 정책
+Q07,더보기 링크 목적과 회사 정책,LINK-002|COMP-LINK-001,표준 검토와 회사 금칙어 둘 다 관련

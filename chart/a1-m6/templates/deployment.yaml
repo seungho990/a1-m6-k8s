@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels: { app: {{ .Release.Name }} }
+  template:
+    metadata:
+      labels: { app: {{ .Release.Name }} }
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      containers:
+        - name: web
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 8000
+          env:
+            - name: APP_ENV
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.existingSecret }}, key: DATABASE_URL }
+            - name: RELEASE_REVISION
+              value: {{ .Values.image.tag | quote }}
+            - name: BASIC_USER
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.existingSecret }}, key: BASIC_USER }
+            - name: BASIC_PASSWORD
+              valueFrom:
+                secretKeyRef: { name: {{ .Values.existingSecret }}, key: BASIC_PASSWORD }
+          readinessProbe:
+            httpGet: { path: /ready, port: 8000 }
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8000 }
+            periodSeconds: 20
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: [ALL]

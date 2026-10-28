@@ -1,0 +1,14 @@
+__pycache__/
+.pytest_cache/
+*.db
+*.sqlite
+.env
+.venv/
+create-app-secret.sh
+k8s/mysql.yaml
+k8s/app-dev09.yaml
+*.kubeconfig
+.env.*
+*.pem
+*.key
+basic-patch.json

@@ -1,0 +1,23 @@
+target,rule_id,scope,expected_outcome,review_note
+I01,IMG-001,standard,failed,alt 속성 존재 여부라는 자체 검사 조건 기준
+I02,IMG-001,standard,passed,alt 빈 문자열도 속성은 존재함
+I03,IMG-001,standard,passed,alt 속성은 있으나 의미 적절성은 미평가
+L01,LINK-001,standard,passed,링크 텍스트 이름 후보 발견
+L02,LINK-001,standard,passed,더보기라는 텍스트 자체는 이름 후보임
+L01,LINK-002,standard,passed,모호 문구 목록에 없는 구체적 링크
+L02,LINK-002,standard,cantTell,WCAG 링크 목적은 주변 맥락 검토 필요
+L03,LINK-002,standard,cantTell,동일 문구라도 주변 맥락에 따라 달라질 수 있음
+F01,FORM-001,standard,failed,이름 후보가 없는 입력란
+F02,FORM-001,standard,passed,명시적 label 연결
+F03,FORM-001,standard,passed,aria-label 이름 후보 존재
+F04,FORM-001,standard,cantTell,aria-labelledby 참조된 실제 이름은 미검증
+L01,COMP-LINK-001,company,passed,사내 금칙어와 다름
+L02,COMP-LINK-001,company,failed,단독 더보기 사내 금칙어
+L03,COMP-LINK-001,company,failed,단독 보기 사내 금칙어
+F01,COMP-FORM-001,company,failed,회사 기준에 필요한 표시 label 없음
+F02,COMP-FORM-001,company,passed,화면에 보이는 label 있음
+F03,COMP-FORM-001,company,failed,접근 가능한 이름과 사내 보이는 label 의무는 다름
+F04,COMP-FORM-001,company,cantTell,현재 검사기의 연결 확인 한계
+F05,COMP-FORM-001,company,passed,label 부모 요소 내 포함
+L04,COMP-LINK-002,company,failed,사내 정책의 자세히 금칙어
+L03,COMP-LINK-002,company,passed,자세히가 아닌 링크 문구

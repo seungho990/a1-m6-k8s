@@ -1,0 +1,5 @@
+apiVersion: v2
+name: a1-m6
+version: 0.1.0
+appVersion: "2.0.0"
+description: A1-M6 inspection and retrieval demo

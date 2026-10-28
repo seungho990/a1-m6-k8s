@@ -1,0 +1,13 @@
+# 트랙 B: Helm으로 배포할 때 chart/a1-m6/values.yaml 위에 덮어쓰는 "내 값"
+# image.repository / image.tag / ingress.host 는 명령의 --set 으로 넣습니다.
+replicaCount: 1
+image:
+  pullPolicy: IfNotPresent
+imagePullSecrets: []          # GHCR 패키지를 Private으로 둘 때만: [{name: ghcr-pull}]
+ingress:
+  enabled: true
+  className: traefik
+resources:                    # 차트 기본값(150m/256Mi · 750m/768Mi)은 롤링 업데이트 때 쿼터 초과
+  requests: { cpu: 100m, memory: 256Mi }
+  limits:   { cpu: 300m, memory: 512Mi }
+existingSecret: a1-m6-app-secrets

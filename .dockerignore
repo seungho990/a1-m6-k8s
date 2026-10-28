@@ -1,0 +1,12 @@
+.git
+.github
+__pycache__
+.pytest_cache
+*.db
+*.sqlite
+.env
+.env.*
+.venv
+results.json
+k8s
+*.kubeconfig

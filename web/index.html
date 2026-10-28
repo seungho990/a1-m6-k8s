@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A1-M6 웹 정합성 검사</title>
+<style>
+:root{--accent:#ff2e93;--ink:#0f172a;--line:#cbd5e1;--muted:#475569;--soft:#f8fafc}*{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font:18px/1.65 Arial,'Malgun Gothic',sans-serif}header{padding:16px 24px;border-bottom:1px solid var(--line);background:var(--soft)}main{max-width:1100px;margin:auto;padding:24px}h1{margin:0;font-size:28px}h2{font-size:23px;margin:30px 0 12px}p{margin:10px 0}.sub{color:var(--muted);font-size:16px}.box{background:var(--soft);border:1px solid var(--line);border-radius:12px;padding:18px;margin:14px 0}textarea{width:100%;min-height:170px;font:16px/1.6 Consolas,monospace;border:1px solid #94a3b8;border-radius:8px;padding:12px;resize:vertical}label{font-weight:700}select,button{font:inherit;padding:9px 15px;border-radius:8px;border:1px solid #94a3b8}button{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700;cursor:pointer}button:disabled{opacity:.6;cursor:wait}.controls{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin-top:12px}.controls label{display:flex;align-items:center;gap:8px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}.stat{padding:12px;border:1px solid var(--line);border-radius:10px}.stat strong{display:block;font-size:27px}.scroll{overflow-x:auto}table{width:100%;border-collapse:collapse;font-size:16px}th,td{border-bottom:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}th{background:var(--soft)}.status{font-weight:700}.failed{color:#b91c1c}.cantTell{color:#a16207}.passed{color:#047857}a{color:#aa005a}code{font-size:15px;background:#edf2f7;border-radius:4px;padding:2px 5px}#message{min-height:28px}footer{border-top:1px solid var(--line);padding:18px 24px;color:var(--muted);font-size:15px}details{margin:4px 0}summary{cursor:pointer;font-weight:600}
+</style></head><body>
+<header><h1>A1-M6 · CSV 규칙 판정과 근거 검색 서비스</h1><p class="sub">M2 rules.csv + rule_tree.csv · M3 검색 · M5 전처리 · M4 회귀평가를 통합합니다. WCAG 공식 검사기나 인증 도구는 아닙니다.</p></header>
+<main>
+<section class="box"><h2>01. HTML 검사</h2><label for="html">검사할 HTML 코드</label><textarea id="html"><main>
+  <img data-case="I01" src="event.jpg">
+  <a data-case="L02" href="/notice">더보기</a>
+  <label for="email">이메일</label><input data-case="F01" id="email">
+</main></textarea>
+<div class="controls"><label>검색 방식 <select id="method"><option value="tfidf">TF-IDF</option><option value="bm25">BM25</option></select></label><label>관련 규칙 후보 <select id="k"><option>1</option><option selected>2</option><option>3</option></select></label><button type="button" id="inspect">검사 실행</button></div><p class="sub">보안을 위해 외부 URL 자동 수집 대신 입력한 HTML 문자열만 검사합니다.</p><p id="message" role="status" aria-live="polite"></p></section>
+<section id="result" hidden><h2>02. 검사 결과</h2><p class="sub" id="meta"></p><div class="cards" id="cards"></div><h2>검토 대상과 근거</h2><div class="scroll"><table><thead><tr><th>대상</th><th>규칙·영역</th><th>결과</th><th>직접 근거·검색 자료</th></tr></thead><tbody id="findings"></tbody></table></div><p class="sub">검색 후보는 참고 규칙이며, 직접 규칙 연결과 구별됩니다. 검색 점수는 WCAG 적합성 점수·정답 확률이 아닙니다. 원본 HTML은 DB에 저장하지 않습니다.</p></section>
+<section><h2>03. 저장된 검사 이력 (검사할 때마다 새 실행 ID 발급)</h2><button id="refresh" type="button">이력 새로고침</button><div class="scroll"><table><thead><tr><th>검사 시각</th><th>검사 ID</th><th>검색</th><th>부적합</th><th>판단 보류</th><th>재조회</th></tr></thead><tbody id="history"></tbody></table></div><p id="historyMsg" role="status"></p></section>
+</main><footer>© 2026 부성순. All rights reserved. W3C 및 외부 기술 자료는 각 원저작자의 권리에 따릅니다.</footer>
+<script>
+const el=id=>document.getElementById(id);
+function cell(tr,text){const td=document.createElement('td');td.textContent=String(text??'');tr.append(td);return td;}
+function addLink(container,url,label){if(!/^https:\/\//.test(url||''))return;const a=document.createElement('a');a.href=url;a.target='_blank';a.rel='noopener noreferrer';a.textContent=label;container.append(a);}
+function showResult(data,archived=false){
+  el('result').hidden=false;
+  const hash=(data.rule_hash||'').slice(0,9);
+  el('meta').textContent='검사 ID: '+data.run_id+' · rules.csv SHA '+hash+' · 전처리 '+(data.preprocess_version||'')+' · '+(data.cache_hit?'캐시 적중':'새 계산')+' · 배포 '+(data.release_revision||'local')+(archived?' · 저장 이력 조회':'');
+  el('cards').replaceChildren();
+  for(const [label,key] of [['판정 건수','rule_target_pairs'],['부적합','failed'],['판단 보류','cantTell'],['직접 규칙 연결','with_direct_rule']]){
+    const div=document.createElement('div');div.className='stat';const small=document.createElement('span');small.textContent=label;
+    const strong=document.createElement('strong');strong.textContent=data.summary[key]??'—';div.append(small,strong);el('cards').append(div);
+  }
+  el('findings').replaceChildren();
+  const items=archived?data.all_findings.filter(x=>['failed','cantTell'].includes(x.outcome)).map(x=>({...x,rule_reference_url:x.evidence?.reference_url,direct_rule:x.evidence?.direct_rule,related_rule_candidates:x.evidence?.related_rule_candidates||[]})):data.review_items;
+  for(const x of items){
+    const tr=document.createElement('tr');cell(tr,x.target);cell(tr,x.rule_id+' / '+(x.scope==='company'?'사내 정책':'표준 관련 검사'));
+    const td=cell(tr,x.outcome);td.className='status '+x.outcome;
+    const ev=document.createElement('td');
+    const direct=document.createElement('div');direct.style.fontWeight='700';direct.textContent='직접 규칙: '+(x.direct_rule?.rule_id||x.rule_id)+' · '+(x.direct_rule?.tree_path||'트리 미연결');ev.append(direct);
+    const url=x.direct_rule?.reference_url||x.reference_url||x.rule_reference_url;
+    addLink(ev,url,'표준 관련 참고 링크');
+    for(const k of x.related_rule_candidates||[]){const div=document.createElement('div');div.textContent='검색 후보: '+k.rule_id+' · '+k.title+' (상대 점수 '+k.score+')';ev.append(div);}
+    if(!(x.related_rule_candidates||[]).length){const div=document.createElement('div');div.textContent='추가 검색 후보 없음';ev.append(div);}
+    tr.append(ev);el('findings').append(tr);
+  }
+  if(!items.length){const tr=document.createElement('tr');const td=cell(tr,'추가 검토 대상 없음');td.colSpan=4;el('findings').append(tr);}
+}
+async function api(path,opts){const r=await fetch(path,opts);if(!r.ok){let text=await r.text();throw new Error('HTTP '+r.status+' '+text.slice(0,180));}return r.json();}
+async function history(){try{const items=await api('/api/history');el('history').replaceChildren();for(const x of items){const tr=document.createElement('tr');cell(tr,x.created_at);cell(tr,x.run_id.slice(0,8));cell(tr,x.method);cell(tr,x.summary.failed);cell(tr,x.summary.cantTell);const td=document.createElement('td');const b=document.createElement('button');b.textContent='보기';b.onclick=async()=>{try{showResult(await api('/api/history/'+encodeURIComponent(x.run_id)),true)}catch(e){el('historyMsg').textContent=e.message}};td.append(b);tr.append(td);el('history').append(tr);}el('historyMsg').textContent=items.length?items.length+'건 표시':'저장된 검사 결과가 없습니다.';}catch(e){el('historyMsg').textContent=e.message;}}
+el('inspect').addEventListener('click',async()=>{const b=el('inspect');b.disabled=true;el('message').textContent='검사 중…';try{const data=await api('/api/inspect',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({html:el('html').value,method:el('method').value,k:Number(el('k').value)})});showResult(data);el('message').textContent='검사 완료 · 검사 이력 저장 완료 (운영: MySQL / 실습: SQLite)';await history();}catch(e){el('message').textContent='검사 실패: '+e.message}finally{b.disabled=false}});
+el('refresh').onclick=history;history();
+</script></body></html>

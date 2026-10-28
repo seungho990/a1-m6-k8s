@@ -1,0 +1,17 @@
+﻿node_id,parent_id,node_type,label,file,rule_id,sort_order,description
+ROOT,,group,웹 정합성 검사 규칙,,,1,업무 규칙 전체 루트
+STD,ROOT,group,표준 관련 검사,,,1,WCAG/KWCAG 관련 검토 항목(공식 인증 규칙 아님)
+STD_IMG,STD,group,이미지,,,1,이미지 관련 검사
+STD_LINK,STD,group,링크,,,2,링크 관련 검사
+STD_FORM,STD,group,입력창,,,3,폼 요소 관련 검사
+COMP,ROOT,group,회사 작성 정책,,,2,회사 자체 기준
+COMP_LINK,COMP,group,링크 작성 규칙,,,1,회사 링크 표기 정책
+COMP_FORM,COMP,group,폼 작성 규칙,,,2,회사 입력창 정책
+N_IMG_001,STD_IMG,rule,이미지 alt 확인,rules.csv,IMG-001,1,원본 파일의 해당 규칙 ID를 조회
+N_LINK_001,STD_LINK,rule,링크 이름 후보,rules.csv,LINK-001,1,링크 이름 후보 탐지
+N_LINK_002,STD_LINK,rule,모호한 링크 검토,rules.csv,LINK-002,2,cantTell 샘플
+N_FORM_001,STD_FORM,rule,입력 필드 이름 후보,rules.csv,FORM-001,1,입력 이름 후보 탐지
+N_COMP_LINK_001,COMP_LINK,rule,사내 더보기 문구 제한,rules.csv,COMP-LINK-001,1,사내 failed 샘플
+N_COMP_LINK_002,COMP_LINK,rule,사내 자세히 문구 제한,rules.csv,COMP-LINK-002,2,사내 작성 정책
+N_COMP_LINK_003,COMP_LINK,rule,바로가기 제한 제안,rules.csv,COMP-LINK-003,3,status=proposed는 실행 제외
+N_COMP_FORM_001,COMP_FORM,rule,사내 화면 레이블 정책,rules.csv,COMP-FORM-001,1,사내 레이블 정책
